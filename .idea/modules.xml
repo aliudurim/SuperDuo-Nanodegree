@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Alexandria/Alexandria.iml" filepath="$PROJECT_DIR$/Alexandria/Alexandria.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Football_Scores/Football_Scores.iml" filepath="$PROJECT_DIR$/Football_Scores/Football_Scores.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SuperDuo-Nanodegree.iml" filepath="$PROJECT_DIR$/SuperDuo-Nanodegree.iml" />
+    </modules>
+  </component>
+</project>
