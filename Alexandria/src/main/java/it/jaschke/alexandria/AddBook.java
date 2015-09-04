@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -43,6 +45,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     }
 
     AddBook ctx;
+    private Toast toast;
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -70,6 +73,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         barcodeContent = new BarcodeContent() {
             @Override
             public void onBarcodeResult(final String result) {
+
                 ean.setText(result);
             }
         };
@@ -89,8 +93,14 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             @Override
             public void afterTextChanged(Editable s) {
 
-                String ean = s.toString();
-                getBook(ean);
+                if (isNetworkAvailable(getActivity())) {
+                    String ean = s.toString();
+                    getBook(ean);
+                } else {
+                    showToast("No Internet Connection");
+                }
+
+
                 //catch isbn10 numbers
 
             }
@@ -151,14 +161,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         if (ean.length() == 10 && !ean.startsWith("978")) {
             ean = "978" + ean;
         }
-        if (ean.length() < 13) {
-            clearFields();
-            return;
-        }
 
-
-        System.out.println("Text: " + ean.length());
-        //Once we have an ISBN, start a book intent
         if (ean.length() == 13) {
             Intent bookIntent = new Intent(getActivity(), BookService.class);
             bookIntent.putExtra(BookService.EAN, ean);
@@ -204,9 +207,16 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+
+        if (authors != null) {
+            String[] authorsArr = authors.split(",");
+
+            ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
+            ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+        } else {
+            ((TextView) rootView.findViewById(R.id.authors)).setText("");
+        }
+
         String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
         if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
             new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
@@ -225,16 +235,6 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     }
 
-    private void clearFields() {
-        ((TextView) rootView.findViewById(R.id.bookTitle)).setText("");
-        ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText("");
-        ((TextView) rootView.findViewById(R.id.authors)).setText("");
-        ((TextView) rootView.findViewById(R.id.categories)).setText("");
-        rootView.findViewById(R.id.bookCover).setVisibility(View.INVISIBLE);
-        rootView.findViewById(R.id.save_button).setVisibility(View.INVISIBLE);
-        rootView.findViewById(R.id.delete_button).setVisibility(View.INVISIBLE);
-    }
-
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -247,5 +247,24 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     public void onResume() {
         super.onResume();
         MainActivity.setTitleInterface.onSetTitle(title);
+    }
+
+    public void showToast(String text) {
+        cancelToast();
+        toast = Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT);
+        toast.show();
+    }
+
+    public void cancelToast() {
+
+        if (toast != null) {
+            toast.cancel();
+        }
+    }
+
+    public static boolean isNetworkAvailable(Context ctx) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 }
